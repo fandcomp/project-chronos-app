@@ -5,9 +5,9 @@ import spacy
 # Muat model spaCy. Ini mungkin memakan waktu saat pertama kali dijalankan (cold start).
 nlp = spacy.load("en_core_web_sm")
 
-app = FastAPI()
+router = APIRouter()
 
-@app.post("/api/process_nlp")
+@router.post("/api/process_nlp")
 async def process_nlp(request: Request):
     body = await request.json()
     text = body.get("text")

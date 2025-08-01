@@ -10,9 +10,9 @@ url: str = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_SERVICE_KEY") # Gunakan Service Key untuk backend
 supabase: Client = create_client(url, key)
 
-app = FastAPI()
+router = APIRouter()
 
-@app.post("/api/process_pdf")
+@router.post("/api/process_pdf")
 async def process_pdf(request: Request):
     body = await request.json()
     file_path = body.get("filePath")

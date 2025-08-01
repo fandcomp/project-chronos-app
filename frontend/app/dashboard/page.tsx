@@ -1,7 +1,6 @@
-// app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,7 +41,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleAddTask = async (e: React.FormEvent) => {
+  const handleAddTask = async (e: FormEvent) => {
     e.preventDefault();
     if (!user || !newTaskTitle.trim()) return;
 
@@ -63,16 +62,21 @@ export default function Dashboard() {
     router.push('/login');
   };
 
-  // --- FUNGSI BARU DARI FASE 2: UPLOAD PDF ---
-  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // --- FUNGSI UPLOAD PDF (DISESUAIKAN UNTUK RENDER) ---
+  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    if (!file || !user || !backendUrl) {
+      if (!backendUrl) alert('URL Backend belum diatur!');
+      return;
+    }
 
     alert('Mengunggah PDF... Ini mungkin memakan waktu beberapa saat untuk diproses.');
     const filePath = `${user.id}/${Date.now()}-${file.name}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('schedules') // Pastikan nama bucket Anda benar
+      .from('schedules')
       .upload(filePath, file);
 
     if (uploadError) {
@@ -80,7 +84,8 @@ export default function Dashboard() {
       return;
     }
 
-    const response = await fetch('/api/process_pdf', {
+    // Panggil API backend menggunakan URL absolut dari environment variable
+    const response = await fetch(`${backendUrl}/api/process_pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filePath }),
@@ -88,16 +93,17 @@ export default function Dashboard() {
 
     const result = await response.json();
     alert(result.message);
-    fetchTasks(); // Muat ulang tugas setelah diproses
+    fetchTasks();
   };
 
-  // --- FUNGSI BARU DARI FASE 2: PROSES INPUT NLP ---
+  // --- FUNGSI INPUT NLP (DISESUAIKAN UNTUK RENDER) ---
   const handleNlpInput = async (text: string) => {
-    // Hanya proses jika teks cukup panjang untuk menghindari panggilan API yang tidak perlu
-    if (text.length < 10) return; 
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (text.length < 10 || !backendUrl) return;
 
     try {
-      const response = await fetch('/api/process_nlp', {
+      // Panggil API backend menggunakan URL absolut dari environment variable
+      const response = await fetch(`${backendUrl}/api/process_nlp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
@@ -129,7 +135,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* --- FORM UTAMA DENGAN KEMAMPUAN NLP --- */}
       <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
         <h3>Tambah Tugas Baru</h3>
         <form onSubmit={handleAddTask} style={{ display: 'flex', gap: '8px' }}>
@@ -138,7 +143,6 @@ export default function Dashboard() {
             value={newTaskTitle}
             onChange={(e) => {
               setNewTaskTitle(e.target.value);
-              // Panggil handleNlpInput saat pengguna mengetik
               handleNlpInput(e.target.value);
             }}
             placeholder="Ketik 'Rapat dengan tim marketing besok jam 2 siang'..."
@@ -150,7 +154,6 @@ export default function Dashboard() {
         </form>
       </div>
 
-      {/* --- FITUR UPLOAD PDF --- */}
       <div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
         <h3>Atau Unggah Jadwal PDF</h3>
         <input 
@@ -160,7 +163,6 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* --- DAFTAR TUGAS --- */}
       <div>
         <h2>Daftar Tugas Anda</h2>
         <ul style={{ listStyle: 'none', padding: 0 }}>

@@ -16,7 +16,7 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
     raise ValueError("Supabase URL and Service Key must be set in environment variables.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-app = FastAPI()
+router = APIRouter()
 
 # --- Model Data untuk Request Body ---
 # Menggunakan Pydantic untuk validasi input otomatis
@@ -27,7 +27,7 @@ class SuggestSlotRequest(BaseModel):
     buffer_minutes: int
 
 # --- Logika Inti ---
-@app.post("/api/suggest_slot")
+@router.post("/api/suggest_slot")
 async def suggest_slot(request: SuggestSlotRequest):
     try:
         # 1. Parsing dan Persiapan Input
