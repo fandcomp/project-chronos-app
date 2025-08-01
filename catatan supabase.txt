@@ -1,0 +1,72 @@
+1. dapatkan kode 
+# .env.local
+NEXT_PUBLIC_SUPABASE_URL=URL_PROYEK_SUPABASE_ANDA
+NEXT_PUBLIC_SUPABASE_ANON_KEY=KUNCI_ANON_PUBLIC_ANDA
+
+2. buat tabel task
+CREATE TABLE tasks (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  start_time TIMESTAMPTZ,
+  end_time TIMESTAMPTZ,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Tambahkan komentar untuk kejelasan
+COMMENT ON TABLE tasks IS 'Menyimpan semua tugas yang dibuat oleh pengguna.';
+
+3. Aktifkan RLS pada Tabel tasks:
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+
+Buat Kebijakan (Policies) untuk Akses:
+
+Kebijakan #1: Pengguna bisa melihat tugas mereka sendiri.
+
+CREATE POLICY "Users can view their own tasks"
+ON tasks FOR SELECT
+USING (auth.uid() = user_id);
+Kebijakan #2: Pengguna bisa membuat tugas untuk diri mereka sendiri.
+
+CREATE POLICY "Users can create their own tasks"
+ON tasks FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+Kebijakan #3 & #4: Pengguna bisa memperbarui dan menghapus tugas mereka sendiri.
+
+CREATE POLICY "Users can update their own tasks"
+ON tasks FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own tasks"
+ON tasks FOR DELETE
+USING (auth.uid() = user_id);
+
+4. Push code ke vercel
+Inisialisasi repositori Git, lakukan commit, dan push kode Anda ke repositori baru di GitHub.
+
+5. Buat Fungsi check_conflict:
+CREATE OR REPLACE FUNCTION check_conflict(
+  p_user_id UUID,
+  p_start_time TIMESTAMPTZ,
+  p_end_time TIMESTAMPTZ
+)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM tasks
+    WHERE
+      user_id = p_user_id AND
+      -- Periksa apakah rentang waktu yang baru tumpang tindih dengan yang sudah ada
+      (start_time, end_time) OVERLAPS (p_start_time, p_end_time)
+  );
+END;
+$$ LANGUAGE plpgsql;
+
+6. Panggil fungsi ini dari API Python atau frontend: 
+supabase.rpc('check_conflict', params)
+
+7. Isi api key supabase di api/suggestslot
+
+8. 

@@ -1,0 +1,128 @@
+Prompt Komprehensif untuk Pengembangan "Project Chronos: The Agentic AI Schedule Manager" (Edisi Vercel + Supabase)
+Peran Anda: Anda adalah seorang Chief Product Officer dan Lead Full-Stack Developer. Tugas Anda adalah merancang dan membangun sebuah aplikasi web inovatif bernama "Project Chronos".
+
+Visi Produk: Menciptakan asisten penjadwalan personal berbasis AI yang cerdas dan proaktif. "Project Chronos" tidak hanya mengagregasi jadwal, tetapi juga memahami, mengoptimalkan, dan secara otomatis mengelola kalender pengguna untuk meningkatkan produktivitas dan keseimbangan hidup. Platform ini akan di-deploy di Vercel dengan Supabase sebagai backend utamanya.
+
+1. Konsep Inti & Target Pengguna
+(Bagian ini tetap sama)
+
+Konsep: Sebuah platform web yang berfungsi sebagai pusat komando untuk semua aktivitas pengguna. AI Agent akan secara otomatis:
+
+Mengimpor & Memahami: Mengekstrak informasi dari jadwal berformat PDF dan input manual.
+
+Menganalisis & Mengoptimalkan: Mendeteksi konflik, menyarankan waktu terbaik untuk tugas baru, dan memastikan ada waktu istirahat yang cukup.
+
+Sinkronisasi & Mengatur: Terhubung dengan kalender personal pengguna (Google Calendar, Outlook Calendar, dll.) dan mengaturnya secara real-time.
+
+Merangkum & Melaporkan: Menyajikan rangkuman dan analitik kegiatan harian/mingguan dalam dashboard yang visual dan mudah dipahami.
+
+Target Pengguna Persona (Contoh):
+
+Nama: Alex
+
+Pekerjaan: Mahasiswa tingkat akhir sekaligus freelancer desainer grafis.
+
+Kebutuhan: Sebuah sistem otomatis yang bisa "membaca" jadwal PDF-nya, mengintegrasikan tugas freelance, dan menyusun semuanya di Google Calendar-nya secara cerdas.
+
+2. Detail Fitur Utama (Fitur yang Harus Dibangun)
+(Bagian ini tetap sama)
+
+Modul 1: Input & Pengolahan Data
+
+Upload & Parsing PDF (OCR & NLP).
+
+Input Manual Cerdas (Natural Language Input).
+
+Prioritas & Kategori kustom.
+
+Modul 2: Mesin Penjadwalan AI
+
+Deteksi & Resolusi Konflik.
+
+Penjadwalan Tugas Cerdas (Smart Task Scheduling).
+
+Penambahan Waktu Otomatis (Waktu Perjalanan & Istirahat).
+
+Pembelajaran Preferensi Pengguna.
+
+Modul 3: Sinkronisasi Kalender
+
+Integrasi Dua Arah (OAuth 2.0) dengan Google, Outlook, dll.
+
+Modul 4: Dashboard & Rangkuman Visual
+
+Timeline Hari Ini, Agenda Minggu Ini, Widget Prioritas.
+
+Halaman Rangkuman dengan grafik alokasi waktu.
+
+3. Arsitektur Teknis yang Disarankan (Dioptimalkan untuk Vercel + Supabase)
+Framework Frontend: Next.js (React). Di-hosting di Vercel untuk performa dan CI/CD terbaik.
+
+Backend-as-a-Service (BaaS): Supabase. Ini akan menjadi inti dari backend Anda, menyediakan:
+
+Database: Gunakan Supabase Postgres sebagai sumber data utama untuk jadwal, pengguna, dan pengaturan.
+
+Autentikasi: Manfaatkan Supabase Auth untuk menangani semua proses login pengguna, termasuk login via email/password dan penyedia OAuth seperti Google. Ini sangat menyederhanakan proses autentikasi.
+
+Penyimpanan File: Gunakan Supabase Storage untuk mengelola semua file PDF yang diunggah oleh pengguna.
+
+API Instan: Manfaatkan API otomatis yang dibuat oleh Supabase untuk operasi data sederhana (CRUD - Create, Read, Update, Delete) langsung dari frontend Next.js, sehingga mengurangi jumlah kode backend yang perlu ditulis.
+
+Logika Backend Kustom: Next.js API Routes (di Vercel). Untuk logika yang lebih kompleks dan sensitif yang tidak bisa ditangani oleh API Supabase secara langsung (misalnya, orkestrasi proses AI, interaksi dengan API kalender eksternal), gunakan Next.js API Routes. Rute ini akan berjalan sebagai serverless functions di Vercel dan berinteraksi dengan Supabase menggunakan hak akses admin.
+
+AI/ML & Pengolahan Data: Fungsi Python Serverless di Vercel.
+
+Alur Kerja:
+
+Pengguna mengunggah PDF dari frontend Next.js ke Supabase Storage.
+
+Frontend memanggil Next.js API Route.
+
+API Route ini kemudian memicu Fungsi Python Serverless di Vercel, dengan memberikan URL file dari Supabase Storage.
+
+Fungsi Python memproses file tersebut dan menyimpan hasilnya (data jadwal yang terstruktur) kembali ke database Supabase Postgres.
+
+Library: Gunakan PyMuPDF, spaCy ringan, atau API LLM eksternal seperti Gemini API.
+
+4. Hal Penting Lainnya (Aspek Non-Fungsional)
+(Bagian ini tetap sama)
+
+Privasi & Keamanan: Transparansi data, enkripsi, kepatuhan GDPR.
+
+Pengalaman Pengguna (UX): Onboarding yang mulus, desain minimalis.
+
+Model Bisnis (Monetization): Freemium atau Subscription.
+
+Contoh Prompt Final untuk Tim Developer / AI (Versi Vercel + Supabase)
+"Anda adalah tim pengembangan produk ahli yang ditugaskan untuk membangun 'Project Chronos', sebuah manajer jadwal cerdas berbasis web. Proyek ini akan di-deploy di Vercel dan menggunakan Supabase sebagai backend.
+
+Tugas Utama:
+Bangun aplikasi web full-stack yang mengimplementasikan fitur-fitur berikut:
+
+Sistem Input Data Fleksibel: Pengguna harus bisa (a) mengunggah jadwal PDF dan (b) memasukkan tugas menggunakan bahasa alami.
+
+Mesin Penjadwalan Cerdas: Inti dari aplikasi ini adalah agen AI yang mampu (a) mendeteksi konflik, (b) menyarankan slot waktu, dan (c) menambahkan buffer time secara otomatis.
+
+Sinkronisasi Kalender Dua Arah: Implementasikan integrasi dengan Google Calendar dan Microsoft Outlook.
+
+Dashboard Analitik & Visual: Buat dashboard interaktif dengan timeline harian dan rangkuman mingguan berbasis grafik.
+
+Stack Teknologi yang Diutamakan (Vercel + Supabase):
+
+Hosting & Frontend: Next.js di-deploy di Vercel.
+
+Backend (BaaS): Supabase. Manfaatkan sepenuhnya:
+
+Supabase Postgres untuk database.
+
+Supabase Auth untuk seluruh sistem autentikasi pengguna.
+
+Supabase Storage untuk unggahan file PDF.
+
+Gunakan API Supabase yang dibuat otomatis untuk operasi data dasar.
+
+Logika Backend Kustom: Gunakan Next.js API Routes untuk orkestrasi dan tugas-tugas sensitif.
+
+Pemrosesan AI (PDF/NLP): Buat sebagai Fungsi Python Serverless terpisah di Vercel yang berinteraksi dengan data di Supabase.
+
+Prioritaskan pengembangan cepat dengan memanfaatkan fitur-fitur Supabase, keamanan data pengguna, dan ciptakan desain UX yang intuitif dan bersih."
