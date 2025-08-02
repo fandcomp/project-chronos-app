@@ -1,0 +1,9 @@
+# netlify.toml
+[build]
+  command = "next build"
+  publish = ".next"
+
+[[plugins]]
+  # Plugin ini secara otomatis menangani semua konfigurasi
+  # yang diperlukan untuk Next.js di Netlify.
+  package = "@netlify/plugin-nextjs"

@@ -62,15 +62,10 @@ export default function Dashboard() {
     router.push('/login');
   };
 
-  // --- FUNGSI UPLOAD PDF (DISESUAIKAN UNTUK RENDER) ---
+  // --- FUNGSI UPLOAD PDF (DISESUAIKAN UNTUK NETLIFY) ---
   const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
-
-    if (!file || !user || !backendUrl) {
-      if (!backendUrl) alert('URL Backend belum diatur!');
-      return;
-    }
+    if (!file || !user) return;
 
     alert('Mengunggah PDF... Ini mungkin memakan waktu beberapa saat untuk diproses.');
     const filePath = `${user.id}/${Date.now()}-${file.name}`;
@@ -84,8 +79,8 @@ export default function Dashboard() {
       return;
     }
 
-    // Panggil API backend menggunakan URL absolut dari environment variable
-    const response = await fetch(`${backendUrl}/api/process_pdf`, {
+    // Panggil API menggunakan path Netlify Functions
+    const response = await fetch('/.netlify/functions/process_pdf', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filePath }),
@@ -96,14 +91,13 @@ export default function Dashboard() {
     fetchTasks();
   };
 
-  // --- FUNGSI INPUT NLP (DISESUAIKAN UNTUK RENDER) ---
+  // --- FUNGSI INPUT NLP (DISESUAIKAN UNTUK NETLIFY) ---
   const handleNlpInput = async (text: string) => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (text.length < 10 || !backendUrl) return;
+    if (text.length < 10) return;
 
     try {
-      // Panggil API backend menggunakan URL absolut dari environment variable
-      const response = await fetch(`${backendUrl}/api/process_nlp`, {
+      // Panggil API menggunakan path Netlify Functions
+      const response = await fetch('/.netlify/functions/process_nlp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
