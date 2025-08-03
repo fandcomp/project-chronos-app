@@ -7,27 +7,23 @@ import os, json, datetime
 
 router = APIRouter()
 supabase: Client = create_client(os.environ.get("NEXT_PUBLIC_SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_KEY"))
-llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0)
-
-vision_client = None
-gcp_project_id = os.environ.get("GCP_PROJECT_ID")
-gcp_private_key = os.environ.get("GCP_PRIVATE_KEY")
-gcp_client_email = os.environ.get("GCP_CLIENT_EMAIL")
-
-if all([gcp_project_id, gcp_private_key, gcp_client_email]):
-    gcp_credentials_info = {
-        "type": "service_account", "project_id": gcp_project_id,
-        "private_key": gcp_private_key.replace('\\n', '\n'),
-        "client_email": gcp_client_email,
-        "token_uri": "https://oauth2.googleapis.com/token",
-    }
-    credentials = service_account.Credentials.from_service_account_info(gcp_credentials_info)
-    vision_client = vision.ImageAnnotatorClient(credentials=credentials)
 
 @router.post("/.netlify/functions/analyze_schedule_file")
 async def analyze_schedule_file(request: Request):
-    if not vision_client:
-        raise HTTPException(status_code=500, detail="Google Vision credentials are not configured correctly.")
+    try:
+        llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0)
+        
+        gcp_credentials_info = {
+            "type": "service_account",
+            "project_id": os.environ.get("GCP_PROJECT_ID"),
+            "private_key": os.environ.get("GCP_PRIVATE_KEY").replace('\\n', '\n'),
+            "client_email": os.environ.get("GCP_CLIENT_EMAIL"),
+            "token_uri": "https://oauth2.googleapis.com/token",
+        }
+        credentials = service_account.Credentials.from_service_account_info(gcp_credentials_info)
+        vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to initialize Google clients: {e}")
     
     body = await request.json()
     file_path = body.get("filePath")
@@ -42,8 +38,6 @@ async def analyze_schedule_file(request: Request):
         if not ocr_text: return {"message": "Tidak ada teks yang bisa dibaca dari file."}
 
         today_date = datetime.date.today().strftime("%A, %d %B %Y")
-        
-        # --- ISI PROMPT DI SINI ---
         prompt = f"""
         Anda adalah asisten cerdas yang tugasnya mengekstrak jadwal dari teks mentah.
         Konteks waktu saat ini adalah: {today_date}.
@@ -62,7 +56,6 @@ async def analyze_schedule_file(request: Request):
         {ocr_text}
         ---
         """
-        # --- AKHIR DARI PROMPT ---
         
         llm_response = llm.invoke(prompt)
         json_string = llm_response.content.strip().replace("```json", "").replace("```", "")

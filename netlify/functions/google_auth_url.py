@@ -7,7 +7,6 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 @router.get("/.netlify/functions/google_auth_url")
 async def get_google_auth_url():
-    # Rakit kembali client_config dari environment variables
     client_id = os.environ.get("GOOGLE_CLIENT_ID")
     project_id = os.environ.get("GCP_PROJECT_ID")
     client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
