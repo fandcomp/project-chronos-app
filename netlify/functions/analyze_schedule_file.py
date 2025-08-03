@@ -42,7 +42,27 @@ async def analyze_schedule_file(request: Request):
         if not ocr_text: return {"message": "Tidak ada teks yang bisa dibaca dari file."}
 
         today_date = datetime.date.today().strftime("%A, %d %B %Y")
-        prompt = f"..." # (Prompt Anda di sini)
+        
+        # --- ISI PROMPT DI SINI ---
+        prompt = f"""
+        Anda adalah asisten cerdas yang tugasnya mengekstrak jadwal dari teks mentah.
+        Konteks waktu saat ini adalah: {today_date}.
+        
+        Berikut adalah teks hasil OCR dari sebuah file jadwal. Analisis teks ini dan kembalikan HANYA daftar acara dalam format JSON yang valid. Setiap acara dalam daftar harus berupa objek dengan key "title", "start_time", dan "end_time".
+        
+        Aturan:
+        - Format "start_time" dan "end_time" harus dalam format ISO 8601 (contoh: "2025-08-04T10:00:00").
+        - Jika durasi tidak disebutkan, asumsikan durasi acara adalah 1 jam.
+        - Jika waktu tidak spesifik (hanya hari), asumsikan jam 9 pagi (09:00).
+        - Abaikan semua teks yang tidak relevan dengan jadwal atau acara.
+        - Jangan memberikan penjelasan apa pun, hanya output JSON.
+        
+        Teks:
+        ---
+        {ocr_text}
+        ---
+        """
+        # --- AKHIR DARI PROMPT ---
         
         llm_response = llm.invoke(prompt)
         json_string = llm_response.content.strip().replace("```json", "").replace("```", "")
