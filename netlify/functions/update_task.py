@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Request, HTTPException
-# ... (impor dan konfigurasi yang sama persis seperti di delete_task.py)
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from supabase import create_client, Client
@@ -47,10 +46,8 @@ async def update_task(request: Request):
                 )
                 service = build('calendar', 'v3', credentials=creds)
                 
-                # Ambil event yang ada untuk diupdate
                 event = service.events().get(calendarId='primary', eventId=google_event_id).execute()
                 
-                # Update field yang berubah
                 event['summary'] = updated_data.get('title', event['summary'])
                 event['start']['dateTime'] = updated_data.get('start_time', event['start']['dateTime'])
                 event['end']['dateTime'] = updated_data.get('end_time', event['end']['dateTime'])
@@ -60,7 +57,6 @@ async def update_task(request: Request):
         # 2. Perbarui tugas di Supabase
         supabase.table("tasks").update({
             "title": updated_data.get("title"),
-            # Tambahkan field lain yang bisa diubah
         }).eq("id", task_id).execute()
 
         return {"status": "success", "message": "Tugas berhasil diperbarui."}
