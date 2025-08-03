@@ -9,7 +9,9 @@ import json
 router = APIRouter()
 
 # Konfigurasi yang sama
-CLIENT_SECRETS_FILE = 'client_secret.json'
+script_dir = os.path.dirname(__file__)
+CLIENT_SECRETS_FILE = os.path.join(script_dir, 'client_secret.json')
+
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")

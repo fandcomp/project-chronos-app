@@ -8,7 +8,8 @@ import json
 router = APIRouter()
 
 # --- Konfigurasi ---
-CLIENT_SECRETS_FILE = 'netlify/functions/client_secret.json' # Pastikan path ini benar
+script_dir = os.path.dirname(__file__)
+CLIENT_SECRETS_FILE = os.path.join(script_dir, 'client_secret.json')
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

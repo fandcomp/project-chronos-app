@@ -6,9 +6,11 @@ import os
 
 router = APIRouter()
 
-# Konfigurasi OAuth 2.0 (gunakan environment variables)
-# Pastikan Anda sudah mengatur ini di Netlify
-CLIENT_SECRETS_FILE = 'client_secret.json' # Anda perlu membuat file ini
+# --- PERBAIKAN PATH ---
+script_dir = os.path.dirname(__file__)
+CLIENT_SECRETS_FILE = os.path.join(script_dir, 'client_secret.json')
+# --------------------
+
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 @router.get("/.netlify/functions/google_auth_url")
