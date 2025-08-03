@@ -1,9 +1,22 @@
-# api/requirements.txt
+# Web Framework & Server
 fastapi
 uvicorn
-supabase  # <-- GANTI DENGAN INI
 pydantic
-python-dotenv
-PyMuPDF
+
+# Klien Database & Layanan Eksternal
+supabase
+google-api-python-client
+google-auth-oauthlib
+
+# Pemrosesan AI & NLP
 spacy
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz
+dateparser
+
+# Kerangka Kerja AI Agent (LLM)
+langchain
+langchain-google-genai
+
+# Utilitas
+PyMuPDF
+python-dotenv
