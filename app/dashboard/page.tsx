@@ -85,7 +85,7 @@ export default function Dashboard() {
       return;
     }
 
-    const response = await fetch('/.netlify/functions/analyze_schedule_file', {
+    const response = await fetch('/.netlify/functions/api/analyze_schedule_file', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -100,7 +100,7 @@ export default function Dashboard() {
   };
 
   const handleGoogleConnect = async () => {
-    const response = await fetch('/.netlify/functions/google_auth_url');
+    const response = await fetch('/.netlify/functions/api/google_auth_url');
     const data = await response.json();
     if (data.auth_url) {
         window.location.href = data.auth_url;
@@ -117,7 +117,7 @@ export default function Dashboard() {
     setAgentResponse('');
 
     try {
-      const response = await fetch('/.netlify/functions/agent_handler', {
+      const response = await fetch('/.netlify/functions/api/agent_handler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
