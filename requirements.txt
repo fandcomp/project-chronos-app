@@ -16,10 +16,9 @@ dateparser
 # Kerangka Kerja AI Agent (LLM)
 langchain
 langchain-google-genai
-
-# Untuk Analisis File Universal
-google-cloud-vision
+langchain-community  # <-- TAMBAHKAN ATAU PASTIKAN BARIS INI ADA
 
 # Utilitas
 PyMuPDF
 python-dotenv
+google-cloud-vision
