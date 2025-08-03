@@ -43,5 +43,5 @@ next-env.d.ts
 .vercel
 
 # Secrets
-netlify/functions/client_secret.json
-netlify/functions/gcp_credentials.json
+netlify/functions/.client_secret.json
+netlify/functions/.gcp_credentials.json

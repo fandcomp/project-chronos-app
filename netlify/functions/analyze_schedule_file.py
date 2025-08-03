@@ -4,31 +4,31 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from google.cloud import vision
 from google.oauth2 import service_account
 import os
-import datetime
 import json
+import base64
+import datetime
 
 router = APIRouter()
-
-SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(os.environ.get("NEXT_PUBLIC_SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_KEY"))
 llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0)
 
-# Inisialisasi Klien Google Vision dari environment variable
-gcp_credentials_json = os.environ.get('GOOGLE_GCP_CREDENTIALS_JSON')
-if gcp_credentials_json:
-    credentials_info = json.loads(gcp_credentials_json)
-    credentials = service_account.Credentials.from_service_account_info(credentials_info)
-    vision_client = vision.ImageAnnotatorClient(credentials=credentials)
-else:
-    vision_client = None # Handle jika variabel tidak ada
+vision_client = None
+encoded_gcp_creds = os.environ.get('GOOGLE_GCP_CREDENTIALS_BASE64')
+if encoded_gcp_creds:
+    try:
+        decoded_creds = base64.b64decode(encoded_gcp_creds)
+        credentials_info = json.loads(decoded_creds)
+        credentials = service_account.Credentials.from_service_account_info(credentials_info)
+        vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+    except Exception as e:
+        print(f"Failed to initialize Vision Client from Base64 env var: {e}")
 
 @router.post("/.netlify/functions/analyze_schedule_file")
 async def analyze_schedule_file(request: Request):
     if not vision_client:
-        raise HTTPException(status_code=500, detail="Google Cloud Vision credentials are not configured.")
+        raise HTTPException(status_code=500, detail="Google Cloud Vision is not configured correctly.")
         
-    # ... (sisa kode tidak berubah)
+    body = await request.json()
     try:
         # 1. Download file dari Supabase Storage
         file_content = supabase.storage.from_("schedules").download(file_path)

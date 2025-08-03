@@ -1,20 +1,23 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from google_auth_oauthlib.flow import Flow
 import os
 import json
+import base64
 
 router = APIRouter()
-
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 @router.get("/.netlify/functions/google_auth_url")
 async def get_google_auth_url():
-    # Ambil konfigurasi dari environment variable
-    client_config_json = os.environ.get('GOOGLE_CLIENT_SECRET_JSON')
-    if not client_config_json:
+    encoded_secret = os.environ.get('GOOGLE_CLIENT_SECRET_BASE64')
+    if not encoded_secret:
         raise HTTPException(status_code=500, detail="Google client secret is not configured.")
     
-    client_config = json.loads(client_config_json)
+    try:
+        decoded_secret = base64.b64decode(encoded_secret)
+        client_config = json.loads(decoded_secret)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to decode client secret: {e}")
 
     flow = Flow.from_client_config(
         client_config=client_config,
