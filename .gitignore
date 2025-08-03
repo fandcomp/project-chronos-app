@@ -44,3 +44,4 @@ next-env.d.ts
 
 # Secrets
 netlify/functions/client_secret.json
+netlify/functions/gcp_credentials.json

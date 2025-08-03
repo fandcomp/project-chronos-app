@@ -5,56 +5,75 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 
-// Definisikan tipe untuk tugas, termasuk google_calendar_event_id
-type Task = {
-  id: number;
+// Impor untuk FullCalendar
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import dayGridPlugin from '@fullcalendar/daygrid';
+
+// Definisikan tipe event untuk FullCalendar
+interface CalendarEvent {
   title: string;
-  created_at: string;
-  google_calendar_event_id: string | null;
-};
+  start: string;
+  end: string;
+}
 
 export default function Dashboard() {
   const { session, user, loading } = useAuth();
   
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [command, setCommand] = useState('');
   const [isAgentLoading, setIsAgentLoading] = useState(false);
   const [agentResponse, setAgentResponse] = useState('');
 
   const router = useRouter();
 
+  const fetchWeeklyTasks = async () => {
+    if (!user) return;
+    
+    const today = new Date();
+    const nextSevenDays = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('title, start_time, end_time')
+      .eq('user_id', user.id)
+      .gte('start_time', today.toISOString())
+      .lte('start_time', nextSevenDays.toISOString())
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching weekly tasks: ', error);
+    } else if (data) {
+      const formattedEvents = data
+        .filter(task => task.start_time && task.end_time)
+        .map(task => ({
+          title: task.title,
+          start: task.start_time!,
+          end: task.end_time!,
+        }));
+      setEvents(formattedEvents);
+    }
+  };
+
   useEffect(() => {
     if (!loading && !session) {
       router.push('/login');
     }
     if (session) {
-      fetchTasks();
+      fetchWeeklyTasks();
     }
   }, [session, loading, router]);
-
-  const fetchTasks = async () => {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching tasks: ', error);
-    } else {
-      setTasks(data as Task[]);
-    }
-  };
-
+  
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/login');
   };
 
-  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    alert('Mengunggah PDF... Ini mungkin memakan waktu beberapa saat untuk diproses.');
+    alert('Mengunggah file untuk dianalisis AI... Ini mungkin memakan waktu.');
     const filePath = `${user.id}/${Date.now()}-${file.name}`;
 
     const { error: uploadError } = await supabase.storage
@@ -62,21 +81,24 @@ export default function Dashboard() {
       .upload(filePath, file);
 
     if (uploadError) {
-      alert('Gagal mengunggah PDF: ' + uploadError.message);
+      alert('Gagal mengunggah file: ' + uploadError.message);
       return;
     }
 
-    const response = await fetch('/.netlify/functions/process_pdf', {
+    const response = await fetch('/.netlify/functions/analyze_schedule_file', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filePath }),
+      body: JSON.stringify({ 
+          filePath: filePath,
+          user_id: user.id
+      }),
     });
 
     const result = await response.json();
     alert(result.message);
-    fetchTasks();
+    fetchWeeklyTasks();
   };
-  
+
   const handleGoogleConnect = async () => {
     const response = await fetch('/.netlify/functions/google_auth_url');
     const data = await response.json();
@@ -85,41 +107,6 @@ export default function Dashboard() {
     } else {
         alert("Gagal mendapatkan URL otentikasi.");
     }
-  };
-
-  const handleDelete = async (taskId: number, googleEventId: string | null) => {
-    if (!user || !confirm("Apakah Anda yakin ingin menghapus tugas ini?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch('/.netlify/functions/delete_task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task_id: taskId,
-          google_event_id: googleEventId,
-          user_id: user.id
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Gagal menghapus tugas.');
-      }
-      
-      const result = await response.json();
-      alert(result.message);
-      fetchTasks();
-    } catch (error: any) {
-      console.error(error);
-      alert(`Terjadi kesalahan: ${error.message}`);
-    }
-  };
-
-  const handleUpdate = (task: Task) => {
-    alert(`Fitur "Ubah" untuk tugas "${task.title}" belum diimplementasikan sepenuhnya.`);
-    // Di sini Anda akan membuka modal/form untuk mengubah data 'task'
   };
 
   const handleAgentQuery = async (e: FormEvent) => {
@@ -147,7 +134,7 @@ export default function Dashboard() {
       const result = await response.json();
       setAgentResponse(result.response);
       
-      fetchTasks();
+      fetchWeeklyTasks();
 
     } catch (error: any) {
       console.error(error);
@@ -162,9 +149,9 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <div style={{ maxWidth: '700px', margin: '50px auto', padding: '20px', fontFamily: 'sans-serif' }}>
+    <div style={{ maxWidth: '950px', margin: '40px auto', padding: '20px', fontFamily: 'sans-serif' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>Welcome, {user.email}</h1>
+        <h1>Chronos Dashboard</h1>
         <button onClick={handleSignOut} style={{ padding: '8px 12px', cursor: 'pointer', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px' }}>
           Keluar
         </button>
@@ -195,10 +182,14 @@ export default function Dashboard() {
       
       <div style={{ marginBottom: '30px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
           <h3>Pengaturan & Integrasi</h3>
-          <p style={{ fontSize: '0.9em', color: '#666', marginTop: 0 }}>Unggah jadwal dari file PDF atau hubungkan kalender Anda.</p>
           <div style={{marginTop: '10px'}}>
-            <label htmlFor="pdf-upload" style={{marginRight: '15px'}}>Unggah PDF:</label>
-            <input id="pdf-upload" type="file" accept="application/pdf" onChange={handlePdfUpload} />
+            <label htmlFor="file-upload" style={{marginRight: '15px'}}>Unggah Jadwal (PDF/Gambar):</label>
+            <input 
+              id="file-upload" 
+              type="file" 
+              accept="application/pdf,image/png,image/jpeg" 
+              onChange={handleFileUpload} 
+            />
           </div>
           <button 
               onClick={handleGoogleConnect} 
@@ -207,23 +198,22 @@ export default function Dashboard() {
           </button>
       </div>
 
-      <div style={{ marginTop: '30px' }}>
-        <h2>Daftar Tugas Anda</h2>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {tasks.length > 0 ? tasks.map((task) => (
-            <li key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid #eee', fontSize: '1.1rem' }}>
-              <span>{task.title}</span>
-              <div>
-                <button onClick={() => handleUpdate(task)} style={{ marginRight: '10px', padding: '5px 10px', background: '#ffc107', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                  Ubah
-                </button>
-                <button onClick={() => handleDelete(task.id, task.google_calendar_event_id)} style={{ padding: '5px 10px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                  Hapus
-                </button>
-              </div>
-            </li>
-          )) : <p>Belum ada tugas.</p>}
-        </ul>
+      <div style={{ marginTop: '30px', border: '1px solid #ddd', padding: '20px', borderRadius: '8px', background: '#fff' }}>
+        <h2>Aktivitas Minggu Ini</h2>
+        <FullCalendar
+          plugins={[timeGridPlugin, dayGridPlugin]}
+          initialView="timeGridWeek"
+          events={events}
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: 'timeGridWeek,timeGridDay'
+          }}
+          height="auto"
+          locale="id"
+          allDaySlot={false}
+          nowIndicator={true}
+        />
       </div>
     </div>
   );

@@ -17,6 +17,9 @@ dateparser
 langchain
 langchain-google-genai
 
+# Untuk Analisis File Universal
+google-cloud-vision
+
 # Utilitas
 PyMuPDF
 python-dotenv
