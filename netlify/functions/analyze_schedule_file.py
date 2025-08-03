@@ -2,29 +2,33 @@ from fastapi import APIRouter, Request, HTTPException
 from supabase import create_client, Client
 from langchain_google_genai import ChatGoogleGenerativeAI
 from google.cloud import vision
+from google.oauth2 import service_account
 import os
 import datetime
+import json
 
 router = APIRouter()
 
-# --- Konfigurasi ---
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Inisialisasi Klien Google
-vision_client = vision.ImageAnnotatorClient()
 llm = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0)
+
+# Inisialisasi Klien Google Vision dari environment variable
+gcp_credentials_json = os.environ.get('GOOGLE_GCP_CREDENTIALS_JSON')
+if gcp_credentials_json:
+    credentials_info = json.loads(gcp_credentials_json)
+    credentials = service_account.Credentials.from_service_account_info(credentials_info)
+    vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+else:
+    vision_client = None # Handle jika variabel tidak ada
 
 @router.post("/.netlify/functions/analyze_schedule_file")
 async def analyze_schedule_file(request: Request):
-    body = await request.json()
-    file_path = body.get("filePath")
-    user_id = body.get("user_id")
-
-    if not file_path or not user_id:
-        raise HTTPException(status_code=400, detail="filePath and user_id are required.")
-
+    if not vision_client:
+        raise HTTPException(status_code=500, detail="Google Cloud Vision credentials are not configured.")
+        
+    # ... (sisa kode tidak berubah)
     try:
         # 1. Download file dari Supabase Storage
         file_content = supabase.storage.from_("schedules").download(file_path)

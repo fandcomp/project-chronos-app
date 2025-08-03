@@ -7,36 +7,35 @@ import json
 
 router = APIRouter()
 
-script_dir = os.path.dirname(__file__)
-CLIENT_SECRETS_FILE = os.path.join(script_dir, 'client_secret.json')
+# --- Konfigurasi ---
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-try:
-    with open(CLIENT_SECRETS_FILE, 'r') as f:
-        secrets = json.load(f)['web']
-        CLIENT_ID = secrets['client_id']
-        CLIENT_SECRET = secrets['client_secret']
-except FileNotFoundError:
+# --- Perubahan: Baca Google Secrets dari Environment Variable ---
+client_config_json = os.environ.get('GOOGLE_CLIENT_SECRET_JSON')
+if client_config_json:
+    secrets = json.loads(client_config_json)['web']
+    CLIENT_ID = secrets['client_id']
+    CLIENT_SECRET = secrets['client_secret']
+else:
     CLIENT_ID, CLIENT_SECRET = None, None
 
 @router.post("/.netlify/functions/update_task")
 async def update_task(request: Request):
     if not CLIENT_ID:
-        raise HTTPException(status_code=500, detail="Client secrets file not found.")
+        raise HTTPException(status_code=500, detail="Google client secret is not configured.")
 
     body = await request.json()
     task_id = body.get('task_id')
     google_event_id = body.get('google_event_id')
     user_id = body.get('user_id')
-    updated_data = body.get('updated_data') # e.g., {"title": "new title", "start_time": "..."}
+    updated_data = body.get('updated_data')
 
     if not all([task_id, user_id, updated_data]):
         raise HTTPException(status_code=400, detail="Missing required data.")
 
     try:
-        # 1. Perbarui acara di Google Calendar jika ada
         if google_event_id:
             res = supabase.table('user_tokens').select('refresh_token').eq('user_id', user_id).single().execute()
             if res.data and res.data.get('refresh_token'):
@@ -55,7 +54,6 @@ async def update_task(request: Request):
                 
                 service.events().update(calendarId='primary', eventId=event['id'], body=event).execute()
 
-        # 2. Perbarui tugas di Supabase
         supabase.table("tasks").update({
             "title": updated_data.get("title"),
         }).eq("id", task_id).execute()

@@ -8,24 +8,23 @@ import json
 router = APIRouter()
 
 # --- Konfigurasi ---
-script_dir = os.path.dirname(__file__)
-CLIENT_SECRETS_FILE = os.path.join(script_dir, 'client_secret.json')
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-try:
-    with open(CLIENT_SECRETS_FILE, 'r') as f:
-        secrets = json.load(f)['web']
-        CLIENT_ID = secrets['client_id']
-        CLIENT_SECRET = secrets['client_secret']
-except FileNotFoundError:
+# --- Perubahan: Baca Google Secrets dari Environment Variable ---
+client_config_json = os.environ.get('GOOGLE_CLIENT_SECRET_JSON')
+if client_config_json:
+    secrets = json.loads(client_config_json)['web']
+    CLIENT_ID = secrets['client_id']
+    CLIENT_SECRET = secrets['client_secret']
+else:
     CLIENT_ID, CLIENT_SECRET = None, None
 
 @router.post("/.netlify/functions/delete_task")
 async def delete_task(request: Request):
     if not CLIENT_ID:
-        raise HTTPException(status_code=500, detail="Client secrets file not found.")
+        raise HTTPException(status_code=500, detail="Google client secret is not configured.")
 
     body = await request.json()
     task_id = body.get('task_id')
@@ -36,7 +35,6 @@ async def delete_task(request: Request):
         raise HTTPException(status_code=400, detail="Missing task_id or user_id.")
 
     try:
-        # 1. Hapus acara dari Google Calendar jika ada
         if google_event_id:
             res = supabase.table('user_tokens').select('refresh_token').eq('user_id', user_id).single().execute()
             if res.data and res.data.get('refresh_token'):
@@ -49,10 +47,8 @@ async def delete_task(request: Request):
                 try:
                     service.events().delete(calendarId='primary', eventId=google_event_id).execute()
                 except Exception as e:
-                    # Abaikan error jika acara sudah tidak ada di kalender
-                    print(f"Could not delete Google Calendar event (it may already be gone): {e}")
+                    print(f"Could not delete Google Calendar event: {e}")
 
-        # 2. Hapus tugas dari database Supabase
         supabase.table("tasks").delete().eq("id", task_id).execute()
 
         return {"status": "success", "message": "Tugas berhasil dihapus."}

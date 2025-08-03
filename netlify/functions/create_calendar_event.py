@@ -7,33 +7,26 @@ import json
 
 router = APIRouter()
 
-# --- Konfigurasi ---
-script_dir = os.path.dirname(__file__)
-CLIENT_SECRETS_FILE = os.path.join(script_dir, 'client_secret.json')
 SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Dapatkan Client ID & Secret dari file
-try:
-    with open(CLIENT_SECRETS_FILE, 'r') as f:
-        secrets = json.load(f)['web']
-        CLIENT_ID = secrets['client_id']
-        CLIENT_SECRET = secrets['client_secret']
-except FileNotFoundError:
-    # Handle error jika file tidak ditemukan saat deploy
-    CLIENT_ID = None
-    CLIENT_SECRET = None
-
 @router.post("/.netlify/functions/create_calendar_event")
 async def create_event(request: Request):
-    if not CLIENT_ID or not CLIENT_SECRET:
-        raise HTTPException(status_code=500, detail="Client secrets file not found or misconfigured.")
+    client_config_json = os.environ.get('GOOGLE_CLIENT_SECRET_JSON')
+    if not client_config_json:
+        raise HTTPException(status_code=500, detail="Google client secret is not configured.")
+    
+    secrets = json.loads(client_config_json)['web']
+    CLIENT_ID = secrets['client_id']
+    CLIENT_SECRET = secrets['client_secret']
 
     body = await request.json()
     user_id = body.get('user_id')
-    task_id = body.get('task_id') # PERUBAHAN 1: Menerima task_id
+    task_id = body.get('task_id')
     event_details = body.get('event')
+
+    # ... (sisa kode tidak berubah)
 
     if not all([user_id, task_id, event_details]):
         raise HTTPException(status_code=400, detail="Missing user_id, task_id, or event details.")
